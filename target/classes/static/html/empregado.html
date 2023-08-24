@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+
+    <head>
+        <title>Gerenciador - empregados</title>
+        <meta charset="UTF-8">
+        <link rel="stylesheet" href="estilo1.css">
+        <link rel="icon" type="image/png" href="../img/planning.png">
+    </head>
+    
+    <body>
+        <header>
+            <nav>
+              <div>
+                <a href="homedev.html"><img src="../img/soccer-ball.png" alt=""></a>
+              </div>
+              <div>
+                <a href="aplicativo.html">Apps</a>
+                <a class="selected" href="empregado.html">Empregados</a>
+                <a href="jogo.html">Jogos</a>
+                <a href="pais.html">Países</a>
+                <a href="login.html" value="Logout" onclick="logout()">Sair</a>
+              </div>
+            </nav>
+          </header>
+
+          <section class="geren">
+            <h1>Gerenciamento de Empregados</h1>
+        
+            <table>
+                <tr> <td>ID:</td> <td><input type="text" id="txtId"></td> </tr>
+                <tr> <td>Nome:</td> <td><input type="text" id="txtNome"></td> </tr>
+                <tr> <td>Cargo:</td> <td><input type="text" id="txtCargo"></td> </tr>
+                <tr> <td>Salário:</td> <td><input type="text" id="txtSalario"></td> </tr>
+                <tr><td></td><td>
+                    <input type="button" value="Novo" onclick="novoEmpregado()" id="btnNovo">
+                    <input type="button" value="Salvar" onclick="salvarEmpregado()" id="btnSalvar">
+                    <input type="button" value="Apagar" onclick="apagarEmpregado()" id="btnApagar">
+                    <input type="button" value="Cancelar" onclick="cancelarEdicao()" id="btnCancelar">
+                    <input type="button" value="Logout" onclick="logout()" id="btnLogout">
+                </td></tr>             
+            </table>
+    
+            <p style="font-weight:bold" id="paragrafoMensagem"></p>
+    
+            <table>    
+                <tr> <th>ID</th> <th>Nome:</th> <th>Cargo:</th> <th>Salário:</th> </tr>   
+                                               
+                <tbody id="corpoTabelaEmpregados"> </tbody>
+            </table>
+          </section>  
+        
+        <script>
+        
+var token = localStorage.getItem('token');
+if (!token) {
+	window.location.replace("/html/login.html");
+}
+const corpoTabela = document.querySelector('#corpoTabelaEmpregados');
+const paragrafoMensagem = document.querySelector('#paragrafoMensagem');
+const txtId = document.querySelector('#txtId');
+const txtNome = document.querySelector('#txtNome');
+const txtCargo = document.querySelector('#txtCargo');
+const txtSalario = document.querySelector('#txtSalario');
+const btnNovo = document.querySelector('#btnNovo');
+const btnSalvar = document.querySelector('#btnSalvar');
+const btnApagar = document.querySelector('#btnApagar');
+const btnCancelar = document.querySelector('#btnCancelar');
+var criandoNovoEmpregado = false;
+inicializar();
+
+function inicializar() {
+    paragrafoMensagem.innerHTML =  'Pressione o botão "Novo" ou selecione um empregado da lista:';
+    txtId.value = '';
+    txtNome.value = '';
+    txtSalario.value = '';
+    txtCargo.value = '';
+    txtId.disabled = true;
+    txtNome.disabled = true;
+    txtCargo.disabled = true;
+    txtSalario.disabled = true;
+    btnNovo.disabled = false;
+    btnSalvar.disabled = true;
+    btnApagar.disabled = true;
+    btnCancelar.disabled = true;
+    criandoNovoEmpregado = false;
+    listarTodosempregados();
+}
+
+async function listarTodosempregados() {
+	fetch('/api/empregados' ,{
+        method: 'GET',
+        headers: {'Authorization': 'Bearer ' + token }
+    })
+    .then(resposta => { if (!resposta.ok) throw Error(resposta.status); return resposta; } )
+    .then(resposta => resposta.json())
+    .then(json => preencherTabela(json))
+    .catch(function(error) {
+        paragrafo.innerHTML = "Erro ao listar empregados (código " + error.message + ")";
+    });
+}
+
+function preencherTabela(empregados) {
+	var linhasTabela = '';
+	var n = empregados.length;
+	for (var i=0; i<n; i++) {
+		var p = empregados[i];
+        console.log(p);
+		linhasTabela += 
+    `<tr> ` + 
+            `<td><a href="javascript:void(0)" onclick="selecionarEmpregado('${p.id}', '${p.nome}', '${p.cargo}', '${p.salario}')">${p.id}</a></td>`
+             + ` <td>${p.nome}</td> <td>${p.cargo}</td> <td>${p.salario}</td></tr> \n`;
+	}
+	corpoTabela.innerHTML = linhasTabela;
+}
+
+function novoEmpregado() {
+    paragrafoMensagem.innerHTML = 'Preencha os dados do novo empregado...';
+    txtId.disabled = true;
+    txtNome.disabled = false;
+    txtCargo.disabled = false;
+    txtSalario.disabled = false;
+    btnNovo.disabled = true;
+    btnSalvar.disabled = false;
+    btnApagar.disabled = true;
+    btnCancelar.disabled = false;
+    criandoNovoEmpregado = true;    
+}
+
+async function salvarEmpregado() {
+    if (criandoNovoEmpregado) {
+        fetch('/api/empregados', {
+            method: 'POST',
+            body: JSON.stringify({
+                'nome': txtNome.value,
+                'cargo': txtCargo.value,
+                'salario': txtSalario.value,
+            }),
+            headers: {
+            	'Content-type': 'application/json',
+            	'Authorization': 'Bearer ' + token
+            }
+        })
+        .then(resposta => { if (!resposta.ok) throw Error(resposta.status); return resposta; } )
+        .then(resposta => resposta.json())
+        .then(json => inicializar())
+        .catch(function(error) {
+            paragrafo.innerHTML = "Erro ao criar empregado (código " + error.message + ")";
+        });  
+    }
+    else {
+        fetch('/api/empregados/' + txtId.value, {
+            method: 'PUT',
+            body: JSON.stringify({
+                'nome': txtNome.value,
+                'cargo': txtCargo.value,
+                'salario': txtSalario.value,
+            }),
+            headers: {
+            	'Content-type': 'application/json',
+            	'Authorization': 'Bearer ' + token
+            }
+        })
+        .then(resposta => { if (!resposta.ok) throw Error(resposta.status); return resposta; } )
+        .then(resposta => resposta.json())
+        .then(json => inicializar())
+        .catch(function(error) {
+            paragrafo.innerHTML = "Erro ao alterar empregado (código " + error.message + ")";
+        });         
+    }  
+}
+
+function cancelarEdicao() {
+	inicializar();
+}
+
+function selecionarEmpregado(id, nome, cargo, salario) {
+    paragrafoMensagem.innerHTML = 'Altere e salve os dados do empregado, ou então apague o registro do empregado.'
+    txtId.value = id;
+    txtNome.value = nome;
+    txtCargo.value = cargo;
+    txtSalario.value = salario;
+    txtId.disabled = true;
+    txtNome.disabled = false;
+    txtCargo.disabled = false;
+    txtSalario.disabled = false;
+    btnNovo.disabled = true;
+    btnSalvar.disabled = false;
+    btnApagar.disabled = false;
+    btnCancelar.disabled = false; 
+}
+
+async function apagarEmpregado() {
+	fetch('/api/empregados/' + txtId.value, {
+        method: 'DELETE',
+        headers: {'Authorization': 'Bearer ' + token }
+    })
+    .then(resposta => { if (!resposta.ok) throw Error(resposta.status); return resposta; } )
+    .then(resposta => inicializar())
+    .catch(function(error) {
+        paragrafo.innerHTML = "Erro ao apagar empregado (código " + error.message + ")";
+    });
+}
+
+function logout() {
+	localStorage.removeItem('token');
+	window.location.replace("/html/login.html");
+}
+
+        </script>
+	</body>
+</html>	        

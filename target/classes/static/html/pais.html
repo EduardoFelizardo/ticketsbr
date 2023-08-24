@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+
+    <head>
+        <title>Gerenciador - Países</title>
+        <meta charset="UTF-8">
+        <link rel="stylesheet" href="estilo1.css">
+        <link rel="icon" type="image/png" href="../img/planning.png">
+    </head>
+    
+    <body>
+        <header>
+            <nav>
+              <div>
+                <a href="homedev.html"><img src="../img/soccer-ball.png" alt=""></a>
+              </div>
+              <div>
+                <a href="aplicativo.html">Apps</a>
+                <a href="empregado.html">Empregados</a>
+                <a href="jogo.html">Jogos</a>
+                <a class="selected" href="pais.html">Países</a>
+                <a href="login.html" value="Logout" onclick="logout()">Sair</a>
+              </div>
+            </nav>
+          </header>
+          <section class="geren">
+            <h1>Gerenciamento de País</h1>
+        
+            <table>
+                <tr> <td>ID:</td> <td><input type="text" id="txtId"></td> </tr>
+                <tr> <td>Nome:</td> <td><input type="text" id="txtNome"></td> </tr>
+                <tr> <td>Continente:</td> <td><input type="text" id="txtContinente"></td> </tr>
+                <tr> <td>População:</td> <td><input type="text" id="txtPopulacao"></td> </tr>
+                <tr>
+                    <td></td>
+                    <td><input type="button" value="Novo" onclick="novoPais()" id="btnNovo">
+                    <input type="button" value="Salvar" onclick="salvarPais()" id="btnSalvar">
+                    <input type="button" value="Apagar" onclick="apagarPais()" id="btnApagar">
+                    <input type="button" value="Cancelar" onclick="cancelarEdicao()" id="btnCancelar">
+                    <input type="button" value="Logout" onclick="logout()" id="btnLogout"></td>
+                </tr>             
+            </table>
+    
+            <p style="font-weight:bold" id="paragrafoMensagem"></p>
+    
+            <table>    
+                <tr>
+                    <th>ID</th><th>Nome</th><th>Continente</th><th>População</th>
+                </tr>                          
+                <tbody id="corpoTabelaPais"></tbody>
+            </table>
+          </section>
+            
+        <script>
+        
+var token = localStorage.getItem('token');
+if (!token) {
+	window.location.replace("/html/login.html");
+}
+const corpoTabela = document.querySelector('#corpoTabelaPais');
+const paragrafoMensagem = document.querySelector('#paragrafoMensagem');
+const txtNome = document.querySelector('#txtNome');
+const txtContinente = document.querySelector('#txtContinente');
+const txtPopulacao = document.querySelector('#txtPopulacao');
+const txtId = document.querySelector('#txtId');
+const btnNovo = document.querySelector('#btnNovo');
+const btnSalvar = document.querySelector('#btnSalvar');
+const btnApagar = document.querySelector('#btnApagar');
+const btnCancelar = document.querySelector('#btnCancelar');
+var criandoNovoPais = false;
+inicializar();
+
+function inicializar() {
+    paragrafoMensagem.innerHTML =  'Pressione o botão "Novo" ou selecione um Pais da lista:';
+    txtId.value = '';
+    txtNome.value = '';
+    txtPopulacao.value = '';
+    txtContinente.value = '';
+    txtId.disabled = true;
+    txtNome.disabled = true;
+    txtContinente.disabled = true;
+    txtPopulacao.disabled = true;
+    btnNovo.disabled = false;
+    btnSalvar.disabled = true;
+    btnApagar.disabled = true;
+    btnCancelar.disabled = true;
+    criandoNovoPais = false;
+    listarTodosPais();
+}
+
+async function listarTodosPais() {
+	fetch('/api/pais' ,{
+        method: 'GET',
+        headers: {'Authorization': 'Bearer ' + token }
+    })
+    .then(resposta => { if (!resposta.ok) throw Error(resposta.status); return resposta; } )
+    .then(resposta => resposta.json())
+    .then(json => preencherTabela(json))
+    .catch(function(error) {
+        paragrafo.innerHTML = "Erro ao listar países (código " + error.message + ")";
+    });
+}
+
+function preencherTabela(pais) {
+	var linhasTabela = '';
+	var n = pais.length;
+	for (var i=0; i<n; i++) {
+		var p = pais[i];
+		linhasTabela += 
+			`<tr> ` + 
+            `<td><a href="javascript:void(0)" onclick="selecionarPais('${p.id}', '${p.nome}', '${p.continente}', '${p.populacao}')">${p.id}</a></td>`
+             + ` <td>${p.nome}</td> <td>${p.continente}</td> <td>${p.populacao}</td> </tr> \n`;
+	}
+	corpoTabela.innerHTML = linhasTabela;
+}
+
+function novoPais() {
+    paragrafoMensagem.innerHTML = 'Preencha os dados do novo Pais...';
+    txtId.disabled = true;
+    txtNome.disabled = false;
+    txtContinente.disabled = false;
+    txtPopulacao.disabled = false;
+    btnNovo.disabled = true;
+    btnSalvar.disabled = false;
+    btnApagar.disabled = true;
+    btnCancelar.disabled = false;
+    criandoNovoPais = true;    
+}
+
+async function salvarPais() {
+    if (criandoNovoPais) {
+        fetch('/api/pais', {
+            method: 'POST',
+            body: JSON.stringify({
+                'nome': txtNome.value,
+                'continente': txtContinente.value,
+                'populacao': txtPopulacao.value
+            }),
+            headers: {
+            	'Content-type': 'application/json',
+            	'Authorization': 'Bearer ' + token
+            }
+        })
+        .then(resposta => { if (!resposta.ok) throw Error(resposta.status); return resposta; } )
+        .then(resposta => resposta.json())
+        .then(json => inicializar())
+        .catch(function(error) {
+            paragrafo.innerHTML = "Erro ao criar Pais (código " + error.message + ")";
+        });  
+    }
+    else {
+        fetch('/api/pais/' + txtId.value, {
+            method: 'PUT',
+            body: JSON.stringify({
+                'id': txtId.value,
+                'nome': txtNome.value,
+                'continente': txtContinente.value,
+                'populacao': txtPopulacao.value
+            }),
+            headers: {
+            	'Content-type': 'application/json',
+            	'Authorization': 'Bearer ' + token
+            }
+        })
+        .then(resposta => { if (!resposta.ok) throw Error(resposta.status); return resposta; } )
+        .then(resposta => resposta.json())
+        .then(json => inicializar())
+        .catch(function(error) {
+            paragrafo.innerHTML = "Erro ao alterar Pais (código " + error.message + ")";
+        });         
+    }  
+}
+
+function cancelarEdicao() {
+	inicializar();
+}
+
+function selecionarPais(id, nome, continente, populacao) {
+    paragrafoMensagem.innerHTML = 'Altere e salve os dados do Pais, ou então apague o registro do Pais.'
+    txtId.value = id;
+    txtNome.value = nome;
+    txtContinente.value = continente;
+    txtPopulacao.value = populacao;
+    txtId.disabled = true;
+    txtNome.disabled = false;
+    txtContinente.disabled = false;
+    txtPopulacao.disabled = false;
+    btnNovo.disabled = true;
+    btnSalvar.disabled = false;
+    btnApagar.disabled = false;
+    btnCancelar.disabled = false; 
+}
+
+async function apagarPais() {
+	fetch('/api/pais/' + txtId.value, {
+        method: 'DELETE',
+        headers: {'Authorization': 'Bearer ' + token }
+    })
+    .then(resposta => { if (!resposta.ok) throw Error(resposta.status); return resposta; } )
+    .then(resposta => inicializar())
+    .catch(function(error) {
+        paragrafo.innerHTML = "Erro ao apagar Pais (código " + error.message + ")";
+    });
+}
+
+function logout() {
+	localStorage.removeItem('token');
+	window.location.replace("/html/login.html");
+}
+
+        </script>
+	</body>
+</html>	        

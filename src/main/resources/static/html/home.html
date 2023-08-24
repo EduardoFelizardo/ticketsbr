@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Home</title>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="estilo1.css">
+  <link rel="icon" type="image/png" href="../img/home.png">
+</head>
+
+<body>
+  <header>
+    <nav>
+      <div>
+        <a href="home.html"><img src="../img/soccer-ball.png" alt=""></a>
+      </div>
+      <div>
+        <a href="cadastro.html">Cadastrar</a>
+        <a href="login.html">Entrar</a>
+      </div>
+    </nav>
+  </header>
+
+  <section class="boasvindas">
+    <div class="boasvindasTitulo">
+      <h1>Eaí fanático, seja muito bem-vindo!</h1>
+    </div>
+  </section>
+
+  <section class="partidas">
+    <div>
+      <h1>Jogos</h1>
+    </div>
+    <div class="campoBusca">
+      <div>
+        <p>Digite o time que deseja ter informações:</p>
+      </div>
+      <div>
+        <input id="busca" placeholder="Palmeiras">
+        <button onclick="buscarPorNome()">Buscar</button>
+      </div>
+    </div>
+    <div class="fichasJogos2" id="buscados">
+
+    </div>
+    <div class="fichasJogos" id="corpoTabelaJogos">
+
+    </div>
+  </section>
+
+  <section class="boxApp">
+    <div>
+      <h1>Conheça nossos aplicativos...</h1>
+    </div>
+    <div class="fichasApps" id="corpoTabelaApp">
+
+    </div>
+  </section>
+
+  <footer>
+    <div class="f1">
+      <div>
+        <h6>Siga-nos</h6>
+      </div>
+      <div>
+        <div>
+          <a href=""><img src="../img/facebook.png" alt="">Facebook</a>
+          <a href=""><img src="../img/instagram.png" alt="">Instagram</a>
+        </div>
+        <div>
+          <a href=""><img src="../img/tiktok.png" alt="">TikTok</a>
+          <a href=""><img src="../img/twitter.png" alt="">Twitter</a>
+        </div>
+      </div>      
+    </div>
+    <div class="f2">
+      <div>
+        <h6>Novidades</h6>
+      </div>
+      <div>
+        <p>• Técnico é levado preso</p>
+        <p>• Corinthians é elimidado</p>
+        <p>• Comissão técnica substituida...</p>
+        <p>• Homenagem ao Rei Pelé</p>
+      </div>
+    </div>
+    <div class="f3">
+      <div>
+        <h6>Patrocinadores</h6>
+      </div>
+      <div>
+        <div>
+          <a href="">Ubisoft</a>
+          <a href="">Playstation</a>
+          <a href="">Microsoft</a>
+          <a href="">Sony</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    var token = localStorage.getItem('token');
+    if (!token) {
+      window.location.replace("/html/login.html");
+    }
+
+    const corpoTabelaApps = document.querySelector('#corpoTabelaApp');
+    const corpoTabelaJogos = document.querySelector('#corpoTabelaJogos');
+    const buscados = document.querySelector('#buscados');
+    const busca = document.querySelector('#busca');
+    const paragrafo = document.querySelector('#paragrafoMensagem');
+    inicializar();
+
+    function inicializar() {
+      listarTodosJogos();
+      listarTodosApp();
+    }
+
+    async function listarTodosJogos() {
+      fetch('/api/jogos', {
+        method: 'GET',
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+        .then(resposta => { if (!resposta.ok) throw Error(resposta.status); return resposta; })
+        .then(resposta => resposta.json())
+        .then(json => preencherTabelaJogos(json))
+        .catch(function (error) {
+          paragrafo.innerHTML = "Erro ao listar jogos (código " + error.message + ")";
+        });
+    }
+
+    function preencherTabelaJogos(jogos) {
+      var linhasTabela = '';
+      var n = jogos.length;
+      for (var i = 0; i < n; i++) {
+        var p = jogos[i];
+        console.log(p);
+        linhasTabela +=
+          `<div class="fichaJogo"> ` +
+          ` <div> ` +
+          ` <p>${p.timeA} ${p.golsA} X ${p.golsB} ${p.timeB}</p> ` +
+          ` </div> ` +
+          ` <div> ` +
+          ` <p> Clique para ver mais...</p> ` +
+          ` </div> ` +
+          ` </div> `;
+      }
+      corpoTabelaJogos.innerHTML = linhasTabela;
+    }
+
+    function buscarPorNome() {
+      fetch('/api/jogos/procurar?time=' + busca.value, {
+        method: 'GET',
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+        .then(resposta => { if (!resposta.ok) throw Error(resposta.status); return resposta; })
+        .then(resposta => resposta.json())
+        .then(json => preencherTabelaJogos2(json))
+        .catch(function (error) {
+          paragrafo.innerHTML = "Erro ao listar jogos (código " + error.message + ")";
+        });
+    }
+
+    function preencherTabelaJogos2(jogos) {
+      var linhasTabela = '';
+      var linhasTabela2 = '';
+      var n = jogos.length;
+      for (var i = 0; i < n; i++) {
+        var p = jogos[i];
+        console.log(p);
+        linhasTabela +=
+          `<div class="fichaJogo2"> ` +
+          ` <div> ` +
+          ` <p>${p.timeA} ${p.golsA} X ${p.golsB} ${p.timeB}</p> ` +
+          ` </div> ` +
+          ` <div> ` +
+          ` <p> Clique para ver mais...</p> ` +
+          ` </div> ` +
+          ` </div> `;
+      }
+      buscados.innerHTML = linhasTabela;
+      corpoTabelaJogos.innerHTML = linhasTabela2;
+    }
+
+    async function listarTodosApp() {
+      fetch('/api/apps', {
+        method: 'GET',
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+        .then(resposta => { if (!resposta.ok) throw Error(resposta.status); return resposta; })
+        .then(resposta => resposta.json())
+        .then(json => preencherTabelaApp(json))
+        .catch(function (error) {
+          paragrafo.innerHTML = "Erro ao listar (código " + error.message + ")";
+        });
+    }
+
+    function preencherTabelaApp(App) {
+      var linhasTabela = '';
+      var n = App.length;
+      for (var i = 0; i < n; i++) {
+        var p = App[i];
+        linhasTabela +=
+          ` <div class="fichaApp"> ` +
+          ` <p>${p.nome}</p> ` +
+          ` <p>${p.dev}</p> ` +
+          ` <p>Mais de ${p.downloads} downloads</p>` +
+          ` </div> `;
+      }
+      corpoTabelaApps.innerHTML = linhasTabela;
+    }
+
+  </script>
+
+</body>
+
+</html>
